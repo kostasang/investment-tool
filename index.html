@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en" data-theme="">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fee Impact Calculator — see what fund fees really cost you</title>
+<meta name="description" content="A modern investment calculator that shows how much of your long-term wealth is quietly lost to fund fees — with per-year growth breakdown, inflation adjustment and fee comparison." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>" />
+<style>
+:root{
+  /* light (default) */
+  --plane:#f6f6f3;
+  --surface-0:#ffffff;
+  --surface-1:#f4f4f1;
+  --surface-2:#ecebe6;
+  --border:rgba(11,11,11,.10);
+  --border-strong:rgba(11,11,11,.16);
+  --text-primary:#0b0b0b;
+  --text-secondary:#52514e;
+  --text-muted:#898781;
+  --accent:#12a06f;
+  --accent-strong:#0e8c60;
+  --accent-soft:rgba(18,160,111,.12);
+  --text-success:#006300;
+  --text-danger:#d03b3b;
+  --series-contrib:#2a78d6;
+  --series-gain:#12a06f;
+  --series-fee:#e34948;
+  --grid:#e6e5df;
+  --axis:#c3c2b7;
+  --shadow:0 1px 2px rgba(11,11,11,.04), 0 8px 24px rgba(11,11,11,.06);
+  --shadow-sm:0 1px 2px rgba(11,11,11,.05);
+  --radius:16px;
+  --radius-sm:11px;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --plane:#0d0d0d;
+  --surface-0:#1a1a19;
+  --surface-1:#222220;
+  --surface-2:#2a2a27;
+  --border:rgba(255,255,255,.10);
+  --border-strong:rgba(255,255,255,.16);
+  --text-primary:#ffffff;
+  --text-secondary:#c3c2b7;
+  --text-muted:#898781;
+  --accent:#1cba82;
+  --accent-strong:#22c78c;
+  --accent-soft:rgba(28,186,130,.14);
+  --text-success:#0ca30c;
+  --text-danger:#e66767;
+  --series-contrib:#3987e5;
+  --series-gain:#1cba82;
+  --series-fee:#e66767;
+  --grid:#2c2c2a;
+  --axis:#383835;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.45);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --plane:#0d0d0d;--surface-0:#1a1a19;--surface-1:#222220;--surface-2:#2a2a27;
+    --border:rgba(255,255,255,.10);--border-strong:rgba(255,255,255,.16);
+    --text-primary:#ffffff;--text-secondary:#c3c2b7;--text-muted:#898781;
+    --accent:#1cba82;--accent-strong:#22c78c;--accent-soft:rgba(28,186,130,.14);
+    --text-success:#0ca30c;--text-danger:#e66767;
+    --series-contrib:#3987e5;--series-gain:#1cba82;--series-fee:#e66767;
+    --grid:#2c2c2a;--axis:#383835;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.45);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:var(--plane);
+  color:var(--text-primary);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  padding:clamp(16px,3vw,40px);
+}
+.wrap{max-width:1160px;margin:0 auto}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- header ---------- */
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:26px;flex-wrap:wrap}
+.brand{display:flex;gap:14px;align-items:center}
+.brand .logo{
+  width:44px;height:44px;border-radius:13px;display:grid;place-items:center;flex:none;
+  background:linear-gradient(140deg,var(--accent),var(--accent-strong));
+  color:#fff;font-size:22px;box-shadow:var(--shadow-sm);
+}
+.brand h1{font-size:clamp(19px,2.4vw,23px);margin:0;letter-spacing:-.01em;font-weight:650}
+.brand p{margin:2px 0 0;color:var(--text-secondary);font-size:13.5px;max-width:52ch}
+.actions{display:flex;gap:8px;align-items:center}
+.btn{
+  font:inherit;font-size:13px;font-weight:550;cursor:pointer;
+  border:1px solid var(--border-strong);background:var(--surface-0);color:var(--text-primary);
+  padding:8px 13px;border-radius:10px;display:inline-flex;gap:7px;align-items:center;
+  transition:background .15s,border-color .15s,transform .05s;
+}
+.btn:hover{background:var(--surface-1)}
+.btn:active{transform:translateY(1px)}
+.btn svg{width:15px;height:15px}
+.btn.copied{border-color:var(--accent);color:var(--accent-strong)}
+
+/* ---------- layout ---------- */
+.grid{display:grid;grid-template-columns:360px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:880px){.grid{grid-template-columns:1fr}}
+.card{
+  background:var(--surface-0);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:20px;
+}
+.card > h2{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 16px;font-weight:600}
+.controls{position:sticky;top:20px}
+@media (max-width:880px){.controls{position:static}}
+
+/* ---------- inputs ---------- */
+.field{margin-bottom:17px}
+.field:last-child{margin-bottom:0}
+.field label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--text-secondary);margin-bottom:7px;font-weight:500}
+.field label .val{color:var(--text-primary);font-weight:650;font-size:13.5px}
+.money{position:relative}
+.money::before{content:"€";position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;pointer-events:none}
+input[type=number],select{
+  width:100%;font:inherit;font-size:14.5px;color:var(--text-primary);
+  background:var(--surface-1);border:1px solid var(--border);border-radius:10px;
+  padding:10px 12px;transition:border-color .15s,box-shadow .15s;
+}
+.money input{padding-left:24px}
+input[type=number]:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+select{appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23898781' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
+}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;
+  background:var(--surface-2);cursor:pointer;margin:6px 0;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--accent);border:3px solid var(--surface-0);box-shadow:0 1px 3px rgba(0,0,0,.25);
+}
+input[type=range]::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;background:var(--accent);
+  border:3px solid var(--surface-0);box-shadow:0 1px 3px rgba(0,0,0,.25);
+}
+.subgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.divider{height:1px;background:var(--border);margin:18px -20px;}
+.section-tag{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin:0 0 12px}
+.toggle{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);cursor:pointer;user-select:none;margin-bottom:2px}
+.toggle input{position:absolute;opacity:0;width:0;height:0}
+.toggle .track{width:38px;height:22px;border-radius:99px;background:var(--surface-2);border:1px solid var(--border);flex:none;transition:background .18s;position:relative}
+.toggle .knob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--surface-0);box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .18s}
+.toggle input:checked + .track{background:var(--accent);border-color:var(--accent)}
+.toggle input:checked + .track .knob{transform:translateX(16px)}
+.toggle input:focus-visible + .track{box-shadow:0 0 0 3px var(--accent-soft)}
+#feeB-field[hidden]{display:none}
+#feeB-field{margin-top:14px}
+
+/* ---------- stat tiles ---------- */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+@media (max-width:560px){.stats{grid-template-columns:1fr 1fr}}
+.tile{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 15px;min-width:0}
+.tile .k{font-size:12px;color:var(--text-secondary);margin:0 0 6px;display:flex;align-items:center;gap:6px}
+.tile .v{font-size:clamp(19px,2.5vw,23px);font-weight:600;margin:0;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .sub{font-size:11.5px;color:var(--text-muted);margin:4px 0 0}
+.tile.hero{grid-column:span 1;background:linear-gradient(160deg,var(--accent-soft),transparent);border-color:color-mix(in srgb,var(--accent) 30%,var(--border))}
+.tile.hero .v{font-size:clamp(23px,3.2vw,30px)}
+.v.danger{color:var(--text-danger)}
+.v.success{color:var(--text-success)}
+.dot{width:9px;height:9px;border-radius:3px;flex:none}
+
+/* ---------- chart ---------- */
+.chart-card{margin-top:20px}
+.chart-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+.chart-head h2{margin:0}
+.legend{display:flex;gap:16px;flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-secondary)}
+.chart-wrap{position:relative;width:100%}
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+.gridline{stroke:var(--grid);stroke-width:1}
+.axis-label{fill:var(--text-muted);font-size:11px}
+.hit{fill:transparent;cursor:crosshair}
+.seg{transition:opacity .12s}
+.band-dim .seg{opacity:.32}
+.band-dim .seg.active{opacity:1}
+.tooltip{
+  position:absolute;pointer-events:none;z-index:5;opacity:0;transition:opacity .12s;
+  background:var(--surface-0);border:1px solid var(--border-strong);border-radius:11px;
+  box-shadow:var(--shadow);padding:11px 13px;font-size:12.5px;min-width:172px;transform:translate(-50%,-100%);
+}
+.tooltip .ty{font-weight:650;margin-bottom:7px;font-size:13px}
+.tooltip .row{display:flex;justify-content:space-between;gap:16px;margin:3px 0}
+.tooltip .row .lbl{display:inline-flex;align-items:center;gap:7px;color:var(--text-secondary)}
+.tooltip .row .amt{font-variant-numeric:tabular-nums;font-weight:600}
+.tooltip .row.tot{border-top:1px solid var(--border);margin-top:7px;padding-top:7px}
+
+footer{margin-top:26px;color:var(--text-muted);font-size:12.5px;text-align:center;line-height:1.7}
+footer a{color:var(--text-secondary)}
+.note{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-size:12.5px;color:var(--text-secondary);margin-top:12px}
+.note b{color:var(--text-primary);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">📈</div>
+      <div>
+        <h1>Fee Impact Calculator</h1>
+        <p>See how much of your long-term wealth quietly leaks out to fund fees — and how it compounds over the years.</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="copyBtn" title="Copy a link that reproduces this exact scenario">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+        <span id="copyLbl">Copy link</span>
+      </button>
+      <button class="btn" id="themeBtn" title="Toggle light / dark" aria-label="Toggle theme">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- ---------------- inputs ---------------- -->
+    <section class="card controls">
+      <h2>Your plan</h2>
+      <div class="subgrid">
+        <div class="field">
+          <label for="principal">Initial amount</label>
+          <div class="money"><input type="number" id="principal" value="10000" step="500" min="0" /></div>
+        </div>
+        <div class="field">
+          <label for="contrib">Yearly top-up</label>
+          <div class="money"><input type="number" id="contrib" value="3000" step="500" min="0" /></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="rate">Gross annual return <span class="val" id="rout">7.0%</span></label>
+        <input type="range" id="rate" min="0" max="15" step="0.5" value="7" />
+      </div>
+      <div class="field">
+        <label for="years">Investment horizon <span class="val" id="nout">25 yrs</span></label>
+        <input type="range" id="years" min="1" max="40" step="1" value="25" />
+      </div>
+      <div class="field">
+        <label for="timing">Contribution timing</label>
+        <select id="timing">
+          <option value="annual">Annual lump sum (year-end)</option>
+          <option value="half">Half-yearly (spread evenly)</option>
+          <option value="quarterly">Quarterly (spread evenly)</option>
+          <option value="monthly">Monthly (spread evenly)</option>
+        </select>
+      </div>
+
+      <div class="divider"></div>
+      <p class="section-tag">Costs &amp; comparison</p>
+      <div class="field">
+        <label for="fee">Annual fee (fund A) <span class="val" id="fout">0.375%</span></label>
+        <input type="range" id="fee" min="0" max="3" step="0.025" value="0.375" />
+      </div>
+      <label class="toggle" for="cmpB">
+        <input type="checkbox" id="cmpB" />
+        <span class="track"><span class="knob"></span></span>
+        <span>Compare with a second fund</span>
+      </label>
+      <div class="field" id="feeB-field" hidden>
+        <label for="feeB">Fund B annual fee <span class="val" id="fbout">1.500%</span></label>
+        <input type="range" id="feeB" min="0" max="3" step="0.025" value="1.5" />
+      </div>
+
+      <div class="divider"></div>
+      <p class="section-tag">Inflation</p>
+      <div class="field">
+        <label for="infl">Inflation rate <span class="val" id="iout">2.0%</span></label>
+        <input type="range" id="infl" min="0" max="8" step="0.1" value="2" />
+      </div>
+    </section>
+
+    <!-- ---------------- results ---------------- -->
+    <div>
+      <section class="card">
+        <h2>Where you land</h2>
+        <div class="stats" style="grid-template-columns:1fr">
+          <div class="tile hero">
+            <p class="k">Final value <span style="color:var(--text-muted)">(after fees)</span></p>
+            <p class="v num" id="fv-net">€0</p>
+            <p class="sub" id="fv-real">≈ €0 in today's money</p>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="tile">
+            <p class="k">Lost to fees</p>
+            <p class="v num danger" id="fv-drag">€0</p>
+            <p class="sub" id="drag-pct">0% of potential</p>
+          </div>
+          <div class="tile">
+            <p class="k">Total contributed</p>
+            <p class="v num" id="total-contrib">€0</p>
+          </div>
+          <div class="tile">
+            <p class="k">Investment gains (net)</p>
+            <p class="v num success" id="fv-gain">€0</p>
+          </div>
+        </div>
+        <div class="note" id="feeb-note" hidden>…</div>
+      </section>
+
+      <section class="card chart-card">
+        <div class="chart-head">
+          <h2>How your money grows, year by year</h2>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--series-contrib)"></i>Contributed</span>
+            <span><i class="dot" style="background:var(--series-gain)"></i>Growth</span>
+            <span><i class="dot" style="background:var(--series-fee)"></i>Lost to fees</span>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="chart" id="chart" role="img" aria-label="Stacked bar chart of contributions, investment growth and fees lost per year"></svg>
+          <div class="tooltip" id="tip"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    Estimates only — assumes a fixed annual return and constant fees, ignores taxes and return volatility. Not financial advice.<br/>
+    Open-source on <a href="https://github.com/" id="repoLink" target="_blank" rel="noopener">GitHub</a> · state is saved in the URL, so bookmark or share any scenario.
+  </footer>
+</div>
+
+<script>
+"use strict";
+/* ---------------- model ---------------- */
+// Net-of-fee return: one year of gross growth, then the fee skims a fraction of the balance.
+const netRate = (rGross, fee) => (1 + rGross) * (1 - fee) - 1;
+
+// Contribution cadence -> compounding periods per year.
+const PERIODS = {annual:1, half:2, quarterly:4, monthly:12};
+
+/**
+ * Per-year balance series. out[i] = balance at end of year i (out[0] = principal).
+ * For k=1 this reduces to the original annual recurrence v = v*(1+rate)+C exactly.
+ */
+function series(P, C, rate, n, timing){
+  const k = PERIODS[timing] || 1;
+  const rp = Math.pow(1 + rate, 1/k) - 1, c = C/k;
+  const out = [P];
+  let v = P;
+  for (let y=0; y<n; y++){ for (let p=0; p<k; p++){ v = v*(1+rp) + c; } out.push(v); }
+  return out;
+}
+
+/* ---------------- formatting ---------------- */
+const euro = x => "€" + Math.round(x).toLocaleString("en-IE");
+const signed = x => (x >= 0 ? "+" : "−") + euro(Math.abs(x));
+function axisEuro(x){
+  if (x >= 1e6) return "€" + (x/1e6).toFixed(x >= 1e7 ? 0 : 1) + "M";
+  if (x >= 1e3) return "€" + Math.round(x/1e3) + "k";
+  return "€" + Math.round(x);
+}
+function niceMax(v){
+  if (v <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  const s = v / p;
+  const step = s <= 1 ? 1 : s <= 2 ? 2 : s <= 2.5 ? 2.5 : s <= 5 ? 5 : 10;
+  return step * p;
+}
+
+/* ---------------- state <-> URL ---------------- */
+const FIELDS = ["principal","contrib","rate","fee","feeB","infl","years","timing"];
+function readState(){
+  const p = new URLSearchParams(location.search);
+  FIELDS.forEach(id => { if (p.has(id)) { const el = document.getElementById(id); if (el) el.value = p.get(id); } });
+  if (p.has("cmp")) document.getElementById("cmpB").checked = p.get("cmp") === "1";
+}
+function writeState(){
+  const p = new URLSearchParams();
+  FIELDS.forEach(id => p.set(id, document.getElementById(id).value));
+  if (document.getElementById("cmpB").checked) p.set("cmp", "1");
+  history.replaceState(null, "", location.pathname + "?" + p.toString());
+}
+
+/* ---------------- chart ---------------- */
+const SVG = "http://www.w3.org/2000/svg";
+const el = (t, a={}) => { const n = document.createElementNS(SVG, t); for (const k in a) n.setAttribute(k, a[k]); return n; };
+
+function drawChart(rows){
+  const svg = document.getElementById("chart");
+  const W = 820, H = 380, mL = 58, mR = 8, mT = 12, mB = 30;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const plotW = W - mL - mR, plotH = H - mT - mB;
+  const n = rows.length;
+  const maxV = niceMax(Math.max(...rows.map(r => r.gross), 1));
+  const y = v => mT + plotH - (v / maxV) * plotH;
+  const band = plotW / n;
+  const bw = Math.min(band * 0.66, 46);
+
+  // gridlines + y labels
+  const ticks = 4;
+  for (let i=0;i<=ticks;i++){
+    const val = maxV * i / ticks, yy = y(val);
+    svg.appendChild(el("line", {class:"gridline", x1:mL, x2:W-mR, y1:yy, y2:yy}));
+    const lab = el("text", {class:"axis-label num", x:mL-8, y:yy+3.5, "text-anchor":"end"});
+    lab.textContent = axisEuro(val); svg.appendChild(lab);
+  }
+
+  // x-label thinning: aim for <= ~12 labels
+  const stepX = Math.ceil(n / 12);
+
+  const segColor = {contrib:"var(--series-contrib)", gain:"var(--series-gain)", fee:"var(--series-fee)"};
+  rows.forEach((r, i) => {
+    const cx = mL + band * i + band/2;
+    const x = cx - bw/2;
+    const gain = Math.max(0, r.net - r.contrib);
+    const fee  = Math.max(0, r.gross - r.net);
+    const parts = [
+      {key:"contrib", v:r.contrib},
+      {key:"gain",    v:gain},
+      {key:"fee",     v:fee},
+    ];
+    let acc = 0;
+    const g = el("g", {class:"band", "data-i":i});
+    // stacked segments, bottom -> top, with a 2px surface gap between them
+    parts.forEach((part, pi) => {
+      if (part.v <= 0) { acc += part.v; return; }
+      const yBot = y(acc), yTop = y(acc + part.v);
+      let h = yBot - yTop;
+      const topMost = pi === parts.length-1 || parts.slice(pi+1).every(p => p.v <= 0);
+      if (!topMost) h = Math.max(0, h - 2); // gap toward the segment above
+      const rect = el("rect", {
+        class:"seg", x, width:bw, y:yTop, height:Math.max(0.5, h),
+        fill:segColor[part.key], rx: topMost ? 4 : 0
+      });
+      g.appendChild(rect);
+      acc += part.v;
+    });
+    svg.appendChild(g);
+
+    // x tick label
+    if (i % stepX === 0 || i === n-1){
+      const t = el("text", {class:"axis-label num", x:cx, y:H-10, "text-anchor":"middle"});
+      t.textContent = r.year; svg.appendChild(t);
+    }
+
+    // hit area for hover
+    const hit = el("rect", {class:"hit", x:mL+band*i, width:band, y:mT, height:plotH, "data-i":i});
+    svg.appendChild(hit);
+  });
+
+  bindHover(svg, rows, {mL, band, mT, y});
+}
+
+function bindHover(svg, rows, geo){
+  const tip = document.getElementById("tip");
+  const wrap = svg.parentElement;
+  const show = i => {
+    const r = rows[i];
+    const gain = Math.max(0, r.net - r.contrib), fee = Math.max(0, r.gross - r.net);
+    tip.innerHTML =
+      `<div class="ty">Year ${r.year}</div>` +
+      row("var(--series-contrib)","Contributed", r.contrib) +
+      row("var(--series-gain)","Growth", gain) +
+      row("var(--series-fee)","Lost to fees", fee) +
+      `<div class="row tot"><span class="lbl">Balance (net)</span><span class="amt num">${euro(r.net)}</span></div>`;
+    const cx = geo.mL + geo.band * i + geo.band/2;
+    const svgRect = svg.getBoundingClientRect();
+    const scale = svgRect.width / 820;
+    tip.style.left = (cx * scale) + "px";
+    tip.style.top  = (geo.y(r.gross) * (svgRect.height/380) - 12) + "px";
+    tip.style.opacity = "1";
+    svg.classList.add("band-dim");
+    svg.querySelectorAll(".band").forEach(g => g.querySelectorAll(".seg").forEach(s => s.classList.remove("active")));
+    const active = svg.querySelector(`.band[data-i="${i}"]`);
+    if (active) active.querySelectorAll(".seg").forEach(s => s.classList.add("active"));
+  };
+  const hide = () => { tip.style.opacity = "0"; svg.classList.remove("band-dim"); };
+  const row = (c,l,v) => `<div class="row"><span class="lbl"><i class="dot" style="background:${c}"></i>${l}</span><span class="amt num">${euro(v)}</span></div>`;
+  svg.querySelectorAll(".hit").forEach(h => {
+    h.addEventListener("mousemove", () => show(+h.dataset.i));
+    h.addEventListener("mouseenter", () => show(+h.dataset.i));
+  });
+  svg.addEventListener("mouseleave", hide);
+}
+
+/* ---------------- main render ---------------- */
+function render(){
+  const g = id => document.getElementById(id);
+  const P = +g("principal").value || 0;
+  const C = +g("contrib").value || 0;
+  const rG = (+g("rate").value) / 100;
+  const fA = (+g("fee").value) / 100;
+  const fB = (+g("feeB").value) / 100;
+  const infl = (+g("infl").value) / 100;
+  const n = parseInt(g("years").value, 10);
+  const timing = g("timing").value;
+
+  // slider read-outs
+  g("rout").textContent = (rG*100).toFixed(1) + "%";
+  g("fout").textContent = (fA*100).toFixed(3) + "%";
+  g("fbout").textContent = (fB*100).toFixed(3) + "%";
+  g("iout").textContent = (infl*100).toFixed(1) + "%";
+  g("nout").textContent = n + " yr" + (n>1?"s":"");
+
+  const rNetA = netRate(rG, fA);
+  const netA   = series(P, C, rNetA, n, timing);
+  const grossA = series(P, C, rG,   n, timing);
+
+  const fvNet = netA[n], fvGross = grossA[n];
+  const drag = fvGross - fvNet;
+  const totalContrib = P + C*n;
+  const gain = fvNet - totalContrib;
+  const real = fvNet / Math.pow(1 + infl, n);
+
+  g("fv-net").textContent = euro(fvNet);
+  g("fv-real").textContent = "≈ " + euro(real) + " in today's money";
+  g("fv-drag").textContent = euro(drag);
+  g("drag-pct").textContent = (fvGross>0 ? (drag/fvGross*100).toFixed(1) : "0") + "% of potential value";
+  g("total-contrib").textContent = euro(totalContrib);
+  g("fv-gain").textContent = euro(gain);
+
+  // fee A/B comparison — only when the user opts in
+  const compare = g("cmpB").checked;
+  g("feeB-field").hidden = !compare;
+  g("feeb-note").hidden = !compare;
+  if (compare){
+    const fvNetB = series(P, C, netRate(rG, fB), n, timing)[n];
+    const feeDiff = fvNetB - fvNet; // negative when B (higher fee) leaves you poorer
+    const worse = feeDiff < 0;
+    g("feeb-note").innerHTML =
+      `<b>Fund B</b> at ${(fB*100).toFixed(2)}% ends at <b>${euro(fvNetB)}</b> — ` +
+      (Math.abs(feeDiff) < 1
+        ? `identical to fund A.`
+        : `that's <b style="color:var(--${worse?'text-danger':'text-success'})">${signed(feeDiff)}</b> ${worse?"less":"more"} than fund A over ${n} years.`);
+  }
+
+  // chart rows (years 1..n)
+  const rows = [];
+  for (let i=1;i<=n;i++){
+    rows.push({year:i, contrib: Math.min(P + C*i, netA[i]), net: netA[i], gross: grossA[i]});
+  }
+  drawChart(rows);
+  writeState();
+}
+
+/* ---------------- theme ---------------- */
+function applyTheme(mode){
+  const root = document.documentElement;
+  if (mode) root.setAttribute("data-theme", mode); else root.removeAttribute("data-theme");
+  const dark = mode ? mode==="dark" : matchMedia("(prefers-color-scheme:dark)").matches;
+  document.getElementById("themeIcon").textContent = dark ? "☀️" : "🌙";
+}
+function initTheme(){
+  const saved = localStorage.getItem("theme");
+  applyTheme(saved || "");
+  document.getElementById("themeBtn").addEventListener("click", () => {
+    const cur = document.documentElement.getAttribute("data-theme");
+    const isDark = cur ? cur==="dark" : matchMedia("(prefers-color-scheme:dark)").matches;
+    const next = isDark ? "light" : "dark";
+    localStorage.setItem("theme", next);
+    applyTheme(next);
+    render(); // redraw so SVG picks up new CSS-var colors deterministically
+  });
+}
+
+/* ---------------- wire up ---------------- */
+readState();
+initTheme();
+[...FIELDS, "cmpB"].forEach(id => {
+  const e = document.getElementById(id);
+  e.addEventListener("input", render);
+  e.addEventListener("change", render);
+});
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(location.href); }
+  catch (_) { /* clipboard blocked — URL already reflects state */ }
+  const b = document.getElementById("copyBtn"), l = document.getElementById("copyLbl");
+  b.classList.add("copied"); l.textContent = "Copied!";
+  setTimeout(() => { b.classList.remove("copied"); l.textContent = "Copy link"; }, 1600);
+});
+addEventListener("resize", () => {
+  clearTimeout(window.__rz); window.__rz = setTimeout(render, 120);
+});
+render();
+</script>
+</body>
+</html>
