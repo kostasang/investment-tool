@@ -122,16 +122,30 @@ header{display:flex;align-items:flex-start;justify-content:space-between;gap:16p
 .field{margin-bottom:17px}
 .field:last-child{margin-bottom:0}
 .field label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--text-secondary);margin-bottom:7px;font-weight:500}
-.field label .val{color:var(--text-primary);font-weight:650;font-size:13.5px}
+.field label .val{color:var(--text-primary);font-weight:650;font-size:13.5px;display:inline-flex;align-items:baseline;gap:1px}
+.val-input{
+  width:5ch;font:inherit;font-size:13.5px;font-weight:650;color:var(--text-primary);cursor:text;
+  background:transparent;border:none;border-bottom:1px solid transparent;
+  text-align:center;padding:0 2px;appearance:none;-moz-appearance:textfield;font-variant-numeric:tabular-nums;
+  transition:border-color .12s,color .12s;
+}
+/* auto-size to the typed number where supported (fixed width above is the fallback) */
+@supports (field-sizing:content){
+  .val-input{width:auto;field-sizing:content;min-width:1.5ch}
+}
+.val-input::-webkit-outer-spin-button,.val-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+/* no visible box until you interact — underline appears on hover/focus */
+.val-input:hover{border-bottom-color:var(--border-strong)}
+.val-input:focus{outline:none;border-bottom-color:var(--accent);color:var(--accent-strong)}
 .money{position:relative}
 .money::before{content:"€";position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;pointer-events:none}
-input[type=number],select{
+input[type=number]:not(.val-input),select{
   width:100%;font:inherit;font-size:14.5px;color:var(--text-primary);
   background:var(--surface-1);border:1px solid var(--border);border-radius:10px;
   padding:10px 12px;transition:border-color .15s,box-shadow .15s;
 }
-.money input{padding-left:24px}
-input[type=number]:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.money input[type=number]{padding-left:24px}
+input[type=number]:not(.val-input):focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 select{appearance:none;cursor:pointer;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23898781' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
@@ -241,12 +255,12 @@ footer a{color:var(--text-secondary)}
       </div>
 
       <div class="field">
-        <label for="rate">Gross annual return <span class="val" id="rout">7.0%</span></label>
-        <input type="range" id="rate" min="0" max="15" step="0.5" value="7" />
+        <label for="rate">Gross annual return <span class="val"><input type="number" class="val-input" id="rate-num" min="0" step="0.5" value="7" aria-label="Gross annual return" />%</span></label>
+        <input type="range" id="rate" min="0" max="30" step="0.5" value="7" />
       </div>
       <div class="field">
-        <label for="years">Investment horizon <span class="val" id="nout">25 yrs</span></label>
-        <input type="range" id="years" min="1" max="40" step="1" value="25" />
+        <label for="years">Investment horizon <span class="val"><input type="number" class="val-input" id="years-num" min="1" step="1" value="25" aria-label="Investment horizon in years" />&nbsp;yrs</span></label>
+        <input type="range" id="years" min="1" max="30" step="1" value="25" />
       </div>
       <div class="field">
         <label for="timing">Contribution timing</label>
@@ -261,7 +275,7 @@ footer a{color:var(--text-secondary)}
       <div class="divider"></div>
       <p class="section-tag">Costs &amp; comparison</p>
       <div class="field">
-        <label for="fee">Annual fee (fund A) <span class="val" id="fout">0.375%</span></label>
+        <label for="fee">Annual fee (fund A) <span class="val"><input type="number" class="val-input" id="fee-num" min="0" step="0.025" value="0.375" aria-label="Fund A annual fee" />%</span></label>
         <input type="range" id="fee" min="0" max="3" step="0.025" value="0.375" />
       </div>
       <label class="toggle" for="cmpB">
@@ -270,14 +284,14 @@ footer a{color:var(--text-secondary)}
         <span>Compare with a second fund</span>
       </label>
       <div class="field" id="feeB-field" hidden>
-        <label for="feeB">Fund B annual fee <span class="val" id="fbout">1.500%</span></label>
+        <label for="feeB">Fund B annual fee <span class="val"><input type="number" class="val-input" id="feeB-num" min="0" step="0.025" value="1.5" aria-label="Fund B annual fee" />%</span></label>
         <input type="range" id="feeB" min="0" max="3" step="0.025" value="1.5" />
       </div>
 
       <div class="divider"></div>
       <p class="section-tag">Inflation</p>
       <div class="field">
-        <label for="infl">Inflation rate <span class="val" id="iout">2.0%</span></label>
+        <label for="infl">Inflation rate <span class="val"><input type="number" class="val-input" id="infl-num" min="0" step="0.1" value="2" aria-label="Inflation rate" />%</span></label>
         <input type="range" id="infl" min="0" max="8" step="0.1" value="2" />
       </div>
     </section>
@@ -376,12 +390,12 @@ function niceMax(v){
 const FIELDS = ["principal","contrib","rate","fee","feeB","infl","years","timing"];
 function readState(){
   const p = new URLSearchParams(location.search);
-  FIELDS.forEach(id => { if (p.has(id)) { const el = document.getElementById(id); if (el) el.value = p.get(id); } });
+  FIELDS.forEach(id => { if (p.has(id)) { const el = fieldEl(id); if (el) el.value = p.get(id); } });
   if (p.has("cmp")) document.getElementById("cmpB").checked = p.get("cmp") === "1";
 }
 function writeState(){
   const p = new URLSearchParams();
-  FIELDS.forEach(id => p.set(id, document.getElementById(id).value));
+  FIELDS.forEach(id => p.set(id, fieldEl(id).value));
   if (document.getElementById("cmpB").checked) p.set("cmp", "1");
   history.replaceState(null, "", location.pathname + "?" + p.toString());
 }
@@ -494,19 +508,13 @@ function render(){
   const g = id => document.getElementById(id);
   const P = +g("principal").value || 0;
   const C = +g("contrib").value || 0;
-  const rG = (+g("rate").value) / 100;
-  const fA = (+g("fee").value) / 100;
-  const fB = (+g("feeB").value) / 100;
-  const infl = (+g("infl").value) / 100;
-  const n = parseInt(g("years").value, 10);
+  // slider fields read from their editable number box (the source of truth)
+  const rG = (+numEl("rate").value) / 100;
+  const fA = (+numEl("fee").value) / 100;
+  const fB = (+numEl("feeB").value) / 100;
+  const infl = (+numEl("infl").value) / 100;
+  const n = Math.max(1, Math.round(+numEl("years").value) || 1);
   const timing = g("timing").value;
-
-  // slider read-outs
-  g("rout").textContent = (rG*100).toFixed(1) + "%";
-  g("fout").textContent = (fA*100).toFixed(3) + "%";
-  g("fbout").textContent = (fB*100).toFixed(3) + "%";
-  g("iout").textContent = (infl*100).toFixed(1) + "%";
-  g("nout").textContent = n + " yr" + (n>1?"s":"");
 
   const rNetA = netRate(rG, fA);
   const netA   = series(P, C, rNetA, n, timing);
@@ -569,10 +577,38 @@ function initTheme(){
   });
 }
 
+/* ---------------- slider <-> number binding ---------------- */
+// Fields rendered as a coarse slider plus an editable "<id>-num" number box.
+// The number box is the source of truth (any value, no clamping / step-snapping);
+// the slider only positions its thumb to the nearest in-range point.
+const SLIDERS = ["rate", "years", "fee", "feeB", "infl"];
+const numEl = id => document.getElementById(id + "-num");
+// Canonical value element for a field id (number box for sliders, else the input itself).
+const fieldEl = id => (SLIDERS.includes(id) ? numEl(id) : document.getElementById(id));
+
+// Move each slider thumb to the nearest in-range point for its box's value.
+function syncSliders(){
+  SLIDERS.forEach(id => {
+    const s = document.getElementById(id), v = parseFloat(numEl(id).value);
+    if (!Number.isNaN(v)) s.value = Math.min(Math.max(v, +s.min), +s.max);
+  });
+}
+function bindSliders(){
+  SLIDERS.forEach(id => {
+    const s = document.getElementById(id), num = numEl(id);
+    // drag the slider -> fill the box with the stepped slider value
+    s.addEventListener("input", () => { num.value = s.value; render(); });
+    // type a value -> just reposition the thumb; keep the typed value verbatim
+    num.addEventListener("input", () => { syncSliders(); render(); });
+  });
+}
+
 /* ---------------- wire up ---------------- */
 readState();
 initTheme();
-[...FIELDS, "cmpB"].forEach(id => {
+bindSliders();
+syncSliders();
+FIELDS.filter(id => !SLIDERS.includes(id)).concat("cmpB").forEach(id => {
   const e = document.getElementById(id);
   e.addEventListener("input", render);
   e.addEventListener("change", render);
